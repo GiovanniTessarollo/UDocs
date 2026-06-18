@@ -8,7 +8,7 @@ import {
   SafeAreaView,
 } from "react-native";
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
   const [cpf, setCpf] = useState("");
   const [senha, setSenha] = useState("");
 
@@ -42,9 +42,12 @@ export default function LoginScreen() {
           onChangeText={setSenha}
         />
 
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Continuar</Text>
-        </TouchableOpacity>
+         <TouchableOpacity
+            style={styles.button}
+             onPress={() => navigation.navigate("Dashboard")}
+                        >
+            <Text style={styles.buttonText}>Continuar</Text>
+            </TouchableOpacity>
 
         <Text style={styles.terms}>
           Ao clicar em continuar, você concorda com nossos{" "}
