@@ -42,17 +42,16 @@ export default function LoginScreen({ navigation }) {
           onChangeText={setSenha}
         />
 
-         <TouchableOpacity
-            style={styles.button}
-             onPress={() => navigation.navigate("Dashboard")}
-                        >
-            <Text style={styles.buttonText}>Continuar</Text>
-            </TouchableOpacity>
+       <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate("Dashboard")}>                  
+        <Text style={styles.buttonText}>Continuar</Text>
+       </TouchableOpacity>
 
         <Text style={styles.terms}>
           Ao clicar em continuar, você concorda com nossos{" "}
-          <Text style={styles.link}>Termos de Serviço</Text> e com a{" "}
-          <Text style={styles.link}>Política de Privacidade</Text>
+        <Text style={styles.link}>Termos de Serviço</Text> e com a{" "}
+        <Text style={styles.link}>Política de Privacidade</Text>
         </Text>
       </View>
 
@@ -60,12 +59,12 @@ export default function LoginScreen({ navigation }) {
         <Text style={styles.footerText}>
           Não tem uma conta ainda?
         </Text>
-
-        <TouchableOpacity>
-          <Text style={styles.register}>
+       <TouchableOpacity
+          onPress={() => navigation.navigate("Register")}>
+        <Text style={styles.register}>
             Criar sua Conta
-          </Text>
-        </TouchableOpacity>
+        </Text>
+       </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
