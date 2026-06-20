@@ -2,6 +2,7 @@
   import { NavigationContainer } from "@react-navigation/native";
   import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
+  import GroupDocumentsScreen from "../screens/GroupDocumentsScreen";
   import NewDocumentScreen from "../screens/NewDocumentScreen";
   import TabNavigator from "./TabNavigator";
   import RegisterScreen from "../screens/RegisterScreen";
@@ -22,6 +23,7 @@
             <Stack.Group screenOptions={{ presentation: "modal" }}>
           <Stack.Screen name="NewDocument" component={NewDocumentScreen}/>
             </Stack.Group>
+            <Stack.Screen name="GroupDocuments" component={GroupDocumentsScreen}/>
         </Stack.Navigator>
       </NavigationContainer>
     );

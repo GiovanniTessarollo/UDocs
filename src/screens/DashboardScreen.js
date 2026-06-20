@@ -11,6 +11,20 @@ import { getDocuments } from "../storage/DocumentStorage";
 
 export default function DashboardScreen() {
   const [documentos, setDocumentos] = useState([]);
+  const vencidos = documentos.filter((doc) => {
+  if (!doc.validade) return false;
+
+  const [dia, mes, ano] =
+    doc.validade.split("/");
+
+  const validadeDate = new Date(
+    ano,
+    mes - 1,
+    dia
+  );
+
+  return validadeDate < new Date();
+}).length;
   const favoritos = documentos.filter( (doc) => doc.favorito).length;
 
   useFocusEffect(
@@ -65,7 +79,7 @@ export default function DashboardScreen() {
         </View>
 
         <View style={styles.statCard}>
-          <Text style={styles.statNumber}>0</Text>
+          <Text style={styles.statNumber}>{vencidos}</Text>
           <Text style={styles.statText}>
             Vencidos
           </Text>

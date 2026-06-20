@@ -1,26 +1,28 @@
 import React, { useState } from "react";
-import {
-  saveDocument,
-  getDocuments,
-} from "../storage/DocumentStorage";
+import { saveDocument } from "../storage/DocumentStorage";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 import {
-  View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  View,
 } from "react-native";
 
 export default function NewDocumentScreen({ navigation }) {
   const [nome, setNome] = useState("");
   const [tipo, setTipo] = useState("");
   const [validade, setValidade] = useState("");
+  const [grupo, setGrupo] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Novo Documento</Text>
+      <Text style={styles.title}>
+        Novo Documento
+      </Text>
 
       <TextInput
         style={styles.input}
@@ -36,33 +38,119 @@ export default function NewDocumentScreen({ navigation }) {
         onChangeText={setTipo}
       />
 
-      <TextInput
+      <TouchableOpacity
         style={styles.input}
-        placeholder="Validade"
-        value={validade}
-        onChangeText={setValidade}
-      />
+        onPress={() => setShowDatePicker(true)}
+      >
+        <Text
+          style={{
+            color: validade ? "#000" : "#999",
+            lineHeight: 55,
+          }}
+        >
+          {validade || "Selecionar validade"}
+        </Text>
+      </TouchableOpacity>
+
+      <Text style={styles.label}>
+        Grupo
+      </Text>
+
+      <View style={styles.groupsContainer}>
+        {[
+          "Pessoal",
+          "Trabalho",
+          "Veículo",
+          "Faculdade",
+          "Outros",
+        ].map((item) => (
+          <TouchableOpacity
+            key={item}
+            style={[
+              styles.groupButton,
+              grupo === item &&
+                styles.groupButtonSelected,
+            ]}
+            onPress={() => setGrupo(item)}
+          >
+            <Text
+              style={[
+                styles.groupButtonText,
+                grupo === item &&
+                  styles.groupButtonTextSelected,
+              ]}
+            >
+              {item}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={new Date()}
+          mode="date"
+          display="default"
+          onChange={(event, selectedDate) => {
+            setShowDatePicker(false);
+
+            if (selectedDate) {
+              const dia = String(
+                selectedDate.getDate()
+              ).padStart(2, "0");
+
+              const mes = String(
+                selectedDate.getMonth() + 1
+              ).padStart(2, "0");
+
+              const ano =
+                selectedDate.getFullYear();
+
+              setValidade(
+                `${dia}/${mes}/${ano}`
+              );
+            }
+          }}
+        />
+      )}
 
       <TouchableOpacity
         style={styles.button}
         onPress={async () => {
-          console.log("SALVANDO...");
+          if (!nome.trim()) {
+            alert("Digite o nome do documento");
+            return;
+          }
 
-        await saveDocument({
-         nome,
-         tipo,
-         validade,
-         favorito: false,
-         createdAt: new Date().toISOString(),});
+          if (!tipo.trim()) {
+            alert("Digite o tipo do documento");
+            return;
+          }
 
-          const docs = await getDocuments();
+          if (!grupo) {
+            alert("Selecione um grupo");
+            return;
+          }
 
-          console.log("DOCUMENTOS:", docs); navigation.goBack();}}>
+          await saveDocument({
+            nome,
+            tipo,
+            validade,
+            grupo,
+            favorito: false,
+            createdAt: new Date().toISOString(),
+          });
+
+          alert("Documento salvo com sucesso!");
+
+          navigation.goBack();
+        }}
+      >
         <Text style={styles.buttonText}>
-         Salvar Documento
+          Salvar Documento
         </Text>
-    </TouchableOpacity>
-     </ScrollView>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
@@ -88,6 +176,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     height: 55,
     marginBottom: 15,
+    justifyContent: "center",
+  },
+
+  label: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 10,
+  },
+
+  groupsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 20,
+  },
+
+  groupButton: {
+    backgroundColor: "#FFF",
+    borderWidth: 1,
+    borderColor: "#DDD",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+
+  groupButtonSelected: {
+    backgroundColor: "#000",
+  },
+
+  groupButtonText: {
+    color: "#000",
+  },
+
+  groupButtonTextSelected: {
+    color: "#FFF",
   },
 
   button: {
