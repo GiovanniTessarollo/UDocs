@@ -65,3 +65,25 @@ export const toggleFavorite = async (indexToToggle) => {
     console.log("Erro ao favoritar:", error);
   }
 };
+
+export const updateDocument = async (
+  indexToUpdate,
+  updatedDocument
+) => {
+  try {
+    const documents = await getDocuments();
+
+    documents[indexToUpdate] =
+      updatedDocument;
+
+    await AsyncStorage.setItem(
+      DOCUMENTS_KEY,
+      JSON.stringify(documents)
+    );
+  } catch (error) {
+    console.log(
+      "Erro ao atualizar documento:",
+      error
+    );
+  }
+};

@@ -9,23 +9,57 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { getDocuments } from "../storage/DocumentStorage";
 
-export default function DashboardScreen() {
+export default function DashboardScreen({
+  navigation,
+}) {
   const [documentos, setDocumentos] = useState([]);
+
   const vencidos = documentos.filter((doc) => {
-  if (!doc.validade) return false;
+    if (!doc.validade) return false;
 
-  const [dia, mes, ano] =
-    doc.validade.split("/");
+    const [dia, mes, ano] =
+      doc.validade.split("/");
 
-  const validadeDate = new Date(
-    ano,
-    mes - 1,
-    dia
-  );
+    const validadeDate = new Date(
+      ano,
+      mes - 1,
+      dia
+    );
 
-  return validadeDate < new Date();
-}).length;
-  const favoritos = documentos.filter( (doc) => doc.favorito).length;
+    return validadeDate < new Date();
+  }).length;
+
+  const favoritos = documentos.filter(
+    (doc) => doc.favorito
+  ).length;
+
+  const proximosVencer = documentos.filter(
+  (doc) => {
+    if (!doc.validade) return false;
+
+    const [dia, mes, ano] =
+      doc.validade.split("/");
+
+    const validadeDate = new Date(
+      ano,
+      mes - 1,
+      dia
+    );
+
+    const hoje = new Date();
+
+    const diferencaDias =
+      Math.ceil(
+        (validadeDate - hoje) /
+          (1000 * 60 * 60 * 24)
+      );
+
+    return (
+      diferencaDias > 0 &&
+      diferencaDias <= 30
+    );
+  }
+).length;
 
   useFocusEffect(
     useCallback(() => {
@@ -41,67 +75,124 @@ export default function DashboardScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.logo}>Udoc</Text>
+        <Text style={styles.logo}>
+          Udoc
+        </Text>
 
         <View style={styles.headerIcons}>
-          <Text style={styles.icon}>🔍</Text>
-          <Text style={styles.icon}>🔔</Text>
+          <Text style={styles.icon}>
+            🔍
+          </Text>
+
+          <Text style={styles.icon}>
+            🔔
+          </Text>
         </View>
       </View>
 
       <View style={styles.banner}>
-        <Text style={styles.bannerTitle}>📄 Seus Documentos</Text>
+        <Text style={styles.bannerTitle}>
+          📄 Seus Documentos
+        </Text>
 
         <Text style={styles.bannerText}>
-          Você possui {documentos.length} documento(s) e {favoritos} favorito(s).
+          Você possui {documentos.length} documento(s)
+          e {favoritos} favorito(s).
         </Text>
       </View>
 
-      <Text style={styles.sectionTitle}>Resumo</Text>
+      <Text style={styles.sectionTitle}>
+        Resumo
+      </Text>
 
       <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>
-            {documentos.length}
-          </Text>
-          <Text style={styles.statText}>
-            Documentos
-          </Text>
-        </View>
+  <View style={styles.statCard}>
+    <Text style={styles.statNumber}>
+      {documentos.length}
+    </Text>
 
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>
-             {favoritos}
-          </Text>
-          <Text style={styles.statText}>
-             Favoritos
-          </Text>
-        </View>
+    <Text style={styles.statText}>
+      Documentos
+    </Text>
+  </View>
 
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{vencidos}</Text>
-          <Text style={styles.statText}>
-            Vencidos
-          </Text>
-        </View>
-      </View>
+  <TouchableOpacity
+    style={styles.statCard}
+    onPress={() =>
+      navigation.navigate(
+        "FavoriteDocuments"
+      )
+    }
+  >
+    <Text style={styles.statNumber}>
+      {favoritos}
+    </Text>
+
+    <Text style={styles.statText}>
+      Favoritos
+    </Text>
+  </TouchableOpacity>
+
+  <TouchableOpacity
+    style={styles.statCard}
+    onPress={() =>
+      navigation.navigate(
+        "ExpiredDocuments"
+      )
+    }
+  >
+    <Text style={styles.statNumber}>
+      {vencidos}
+    </Text>
+
+    <Text style={styles.statText}>
+      Vencidos
+    </Text>
+  </TouchableOpacity>
+
+  <TouchableOpacity
+    style={styles.statCard}
+    onPress={() =>
+      navigation.navigate(
+        "UpcomingDocuments"
+      )
+    }
+  >
+    <Text style={styles.statNumber}>
+      {proximosVencer}
+    </Text>
+
+    <Text style={styles.statText}>
+      Próximos
+    </Text>
+  </TouchableOpacity>
+</View>
 
       <Text style={styles.sectionTitle}>
         Documentos recentes
       </Text>
 
       {documentos.length === 0 ? (
-        <Text>Nenhum documento cadastrado.</Text>
+        <Text>
+          Nenhum documento cadastrado.
+        </Text>
       ) : (
         documentos
           .slice(-3)
           .reverse()
           .map((doc, index) => (
-            <View key={index} style={styles.documentCard}>
-              <Text>📄 {doc.nome}</Text>
+            <View
+              key={index}
+              style={styles.documentCard}
+            >
+              <Text>
+                📄 {doc.nome}
+              </Text>
             </View>
           ))
       )}
+
+      
     </ScrollView>
   );
 }
@@ -160,17 +251,19 @@ const styles = StyleSheet.create({
   },
 
   statsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
+  flexDirection: "row",
+  flexWrap: "wrap",
+  justifyContent: "space-between",
+},
 
   statCard: {
-    backgroundColor: "#FFF",
-    width: "30%",
-    padding: 15,
-    borderRadius: 15,
-    alignItems: "center",
-  },
+  backgroundColor: "#FFF",
+  width: "48%",
+  padding: 15,
+  borderRadius: 15,
+  alignItems: "center",
+  marginBottom: 12,
+},
 
   statNumber: {
     fontSize: 24,

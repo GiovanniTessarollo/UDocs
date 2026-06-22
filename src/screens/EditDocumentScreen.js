@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { saveDocument } from "../storage/DocumentStorage";
+import {
+  updateDocument,
+} from "../storage/DocumentStorage";
+
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { scheduleExpirationNotification,} from "../services/NotificationService";
 
 import {
   Text,
@@ -12,17 +14,38 @@ import {
   View,
 } from "react-native";
 
-export default function NewDocumentScreen({ navigation }) {
-  const [nome, setNome] = useState("");
-  const [tipo, setTipo] = useState("");
-  const [validade, setValidade] = useState("");
-  const [grupo, setGrupo] = useState("");
-  const [showDatePicker, setShowDatePicker] = useState(false);
+export default function EditDocumentScreen({
+  route,
+  navigation,
+}) {
+  const {
+    documento,
+    index,
+  } = route.params;
+
+  const [nome, setNome] = useState(
+    documento.nome
+  );
+
+  const [tipo, setTipo] = useState(
+    documento.tipo
+  );
+
+  const [validade, setValidade] = useState(
+    documento.validade || ""
+  );
+
+  const [grupo, setGrupo] = useState(
+    documento.grupo
+  );
+
+  const [showDatePicker, setShowDatePicker] =
+    useState(false);
 
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>
-        Novo Documento
+        ✏️ Editar Documento
       </Text>
 
       <TextInput
@@ -34,22 +57,27 @@ export default function NewDocumentScreen({ navigation }) {
 
       <TextInput
         style={styles.input}
-        placeholder="Tipo (RG, CNH, CPF...)"
+        placeholder="Tipo"
         value={tipo}
         onChangeText={setTipo}
       />
 
       <TouchableOpacity
         style={styles.input}
-        onPress={() => setShowDatePicker(true)}
+        onPress={() =>
+          setShowDatePicker(true)
+        }
       >
         <Text
           style={{
-            color: validade ? "#000" : "#999",
+            color: validade
+              ? "#000"
+              : "#999",
             lineHeight: 55,
           }}
         >
-          {validade || "Selecionar validade"}
+          {validade ||
+            "Selecionar validade"}
         </Text>
       </TouchableOpacity>
 
@@ -72,7 +100,9 @@ export default function NewDocumentScreen({ navigation }) {
               grupo === item &&
                 styles.groupButtonSelected,
             ]}
-            onPress={() => setGrupo(item)}
+            onPress={() =>
+              setGrupo(item)
+            }
           >
             <Text
               style={[
@@ -92,7 +122,10 @@ export default function NewDocumentScreen({ navigation }) {
           value={new Date()}
           mode="date"
           display="default"
-          onChange={(event, selectedDate) => {
+          onChange={(
+            event,
+            selectedDate
+          ) => {
             setShowDatePicker(false);
 
             if (selectedDate) {
@@ -101,7 +134,8 @@ export default function NewDocumentScreen({ navigation }) {
               ).padStart(2, "0");
 
               const mes = String(
-                selectedDate.getMonth() + 1
+                selectedDate.getMonth() +
+                  1
               ).padStart(2, "0");
 
               const ano =
@@ -119,40 +153,39 @@ export default function NewDocumentScreen({ navigation }) {
         style={styles.button}
         onPress={async () => {
           if (!nome.trim()) {
-            alert("Digite o nome do documento");
+            alert(
+              "Digite o nome do documento"
+            );
             return;
           }
 
           if (!tipo.trim()) {
-            alert("Digite o tipo do documento");
+            alert(
+              "Digite o tipo do documento"
+            );
             return;
           }
 
-          if (!grupo) {
-            alert("Selecione um grupo");
-            return;
-          }
+          await updateDocument(
+            index,
+            {
+              ...documento,
+              nome,
+              tipo,
+              validade,
+              grupo,
+            }
+          );
 
-          await saveDocument({
-            nome,
-            tipo,
-            validade,
-            grupo,
-            favorito: false,
-            createdAt: new Date().toISOString(),
-          });
-
-          
-  await scheduleExpirationNotification(
-    nome,
-  );
-          alert("Documento salvo com sucesso!");
+          alert(
+            "Documento atualizado!"
+          );
 
           navigation.goBack();
         }}
       >
         <Text style={styles.buttonText}>
-          Salvar Documento
+          Salvar Alterações
         </Text>
       </TouchableOpacity>
     </ScrollView>

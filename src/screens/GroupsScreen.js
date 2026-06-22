@@ -20,16 +20,18 @@ export default function GroupsScreen({ navigation }) {
 
         const grouped = {};
 
-        docs.forEach((doc) => {
-          const grupo = doc.grupo || "Sem grupo";
+        docs.forEach((doc, originalIndex) => {
+  const grupo = doc.grupo || "Sem grupo";
 
-          if (!grouped[grupo]) {
-            grouped[grupo] = [];
-          }
+  if (!grouped[grupo]) {
+    grouped[grupo] = [];
+  }
 
-          grouped[grupo].push(doc);
-        });
-
+  grouped[grupo].push({
+    ...doc,
+    originalIndex,
+  });
+});
         setGrupos(grouped);
       };
 

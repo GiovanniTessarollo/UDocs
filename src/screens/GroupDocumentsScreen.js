@@ -1,13 +1,62 @@
 import React from "react";
 import {
-  View,
   Text,
   ScrollView,
   StyleSheet,
+  TouchableOpacity,
 } from "react-native";
 
-export default function GroupDocumentsScreen({ route }) {
+export default function GroupDocumentsScreen({
+  route,
+  navigation,
+}) {
   const { grupo, documentos } = route.params;
+
+  const getStatus = (validade) => {
+    if (!validade) {
+      return {
+        texto: "Em dia",
+        cor: "#22C55E",
+      };
+    }
+
+    const [dia, mes, ano] =
+      validade.split("/");
+
+    const validadeDate =
+      new Date(
+        ano,
+        mes - 1,
+        dia
+      );
+
+    const hoje = new Date();
+
+    const diferencaDias =
+      Math.ceil(
+        (validadeDate - hoje) /
+          (1000 * 60 * 60 * 24)
+      );
+
+    if (diferencaDias < 0) {
+      return {
+        texto: "Vencido",
+        cor: "#EF4444",
+      };
+    }
+
+    if (diferencaDias <= 30) {
+      return {
+        texto: "Vence em breve",
+        cor: "#F59E0B",
+      };
+    }
+
+    return {
+      texto: "Em dia",
+      cor: "#22C55E",
+    };
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -15,16 +64,57 @@ export default function GroupDocumentsScreen({ route }) {
         👥 {grupo}
       </Text>
 
-      {documentos.map((doc, index) => (
-        <View
-          key={index}
-          style={styles.documentCard}
-        >
-          <Text>
-            📄 {doc.nome}
-          </Text>
-        </View>
-      ))}
+      {documentos.length === 0 ? (
+        <Text>
+          Nenhum documento encontrado.
+        </Text>
+      ) : (
+        documentos.map((doc, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.documentCard}
+            onPress={() =>
+              navigation.navigate(
+                "DocumentDetails",
+                {
+                  documento: doc,
+                  index:
+                    doc.originalIndex,
+                }
+              )
+            }
+          >
+            <Text>
+              📄 {doc.nome}
+            </Text>
+
+            <Text>
+              📅{" "}
+              {doc.validade ||
+                "Sem validade"}
+            </Text>
+
+            <Text
+              style={[
+                styles.statusText,
+                {
+                  color:
+                    getStatus(
+                      doc.validade
+                    ).cor,
+                },
+              ]}
+            >
+              ●{" "}
+              {
+                getStatus(
+                  doc.validade
+                ).texto
+              }
+            </Text>
+          </TouchableOpacity>
+        ))
+      )}
     </ScrollView>
   );
 }
@@ -41,6 +131,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 40,
     marginBottom: 20,
+  },
+
+  statusText: {
+    marginTop: 5,
+    fontSize: 12,
+    fontWeight: "700",
   },
 
   documentCard: {
