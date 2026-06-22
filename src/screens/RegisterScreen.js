@@ -12,7 +12,29 @@ import {
 export default function RegisterScreen({ navigation }) {
   const [cpf, setCpf] = useState("");
   const [senha, setSenha] = useState("");
+  const [error, setErrorSenha] = useState("");
+  const [errorCpf, setErrorCpf] = useState("");
+  const [errorConfirmarSenha, setErrorConfirmarSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
+
+  const validateCpf = (cpf) => {
+    cpf = cpf.replace(/[^\d]+/g, '');
+    if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) {
+      return false;
+    }
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+      sum += parseInt(cpf.charAt(i)) * (10 - i);
+    }
+    let rest = (sum * 10) % 11;
+    if (rest === 10) {
+      rest = 0;
+    }
+    if (rest !== parseInt(cpf.charAt(9))) {
+      return false;
+    }
+    return true;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -22,11 +44,11 @@ export default function RegisterScreen({ navigation }) {
       </View>
 
       <View style={styles.formContainer}>
-        <Text style={styles.title}>Cadastrar</Text>
+      <Text style={styles.title}>Cadastrar</Text>
 
-        <Text style={styles.subtitle}>
-          Insira seu CPF para cadastrar no seu Udoc
-        </Text>
+      <Text style={styles.subtitle}>
+        Insira seu CPF para cadastrar no seu Udoc
+      </Text>
 
         <TextInput
           style={styles.input}
@@ -34,7 +56,18 @@ export default function RegisterScreen({ navigation }) {
           keyboardType="numeric"
           value={cpf}
           onChangeText={setCpf}
+          onBlur={() => {
+            if (!validateCpf(cpf)) {
+              setErrorCpf("CPF inválido");
+            } else {            
+              setErrorCpf("");
+            }          
+          }}
         />
+
+        <Text style={styles.setErrorCpf}>
+          {errorCpf}
+        </Text>
 
         <TextInput
           style={styles.input}
@@ -42,7 +75,18 @@ export default function RegisterScreen({ navigation }) {
           secureTextEntry
           value={senha}
           onChangeText={setSenha}
+          onBlur={() => {
+            if (senha.length < 6) {
+              setErrorSenha("A senha deve conter pelo menos 6 caracteres.");
+            } else {
+              setErrorSenha("");
+            }
+          }}
         />
+
+        <Text style={styles.setErrorSenha}>
+            {error}
+        </Text>
 
         <TextInput
           style={styles.input}
@@ -50,21 +94,43 @@ export default function RegisterScreen({ navigation }) {
           secureTextEntry
           value={confirmarSenha}
           onChangeText={setConfirmarSenha}
+          onBlur={() => {
+            if (confirmarSenha !== senha) {
+              setErrorConfirmarSenha("As senhas não coincidem.");
+            } else {
+              setErrorConfirmarSenha("");
+            }
+          }}
         />
+
+        <Text style={styles.setErrorSenha}>
+            {errorConfirmarSenha}
+        </Text>
 
         <TouchableOpacity
           style={styles.button}
           onPress={() => {
-            Alert.alert(
-              "Cadastro realizado",
-              "Sua conta foi criada com sucesso!",
-              [
-                {
-                  text: "OK",
-                  onPress: () => navigation.navigate("Login"),
-                },
-              ]
-            );
+            if (!validateCpf(cpf)) {
+              setErrorCpf("CPF inválido");
+              return;
+            } else {
+              setErrorCpf("");
+
+              if (senha.length < 6) {
+                setErrorSenha("A senha deve conter pelo menos 6 caracteres.");
+                return;
+              } else {
+                setErrorSenha("");
+                navigation.navigate("Login");
+
+                
+
+                // Falta colocar um popup de sucesso.
+
+
+
+              }
+            }
           }}
         >
           <Text style={styles.buttonText}>Continuar</Text>
@@ -189,4 +255,33 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#000",
   },
+
+  setError: {
+    textAlign: "center",
+    color: "red",
+    fontSize: 14,
+    marginBottom: 10,
+  },
+
+  setErrorCpf: {
+    textAlign: "center",
+    color: "red",
+    fontSize: 14,
+    marginBottom: 10,
+  },
+
+  setErrorSenha: {
+    textAlign: "center",
+    color: "red",
+    fontSize: 14,
+    marginBottom: 10,  
+  },
+
+  setErrorConfirmarSenha: {
+    textAlign: "center",
+    color: "red",
+    fontSize: 14,
+    marginBottom: 10,
+  },
+
 });
