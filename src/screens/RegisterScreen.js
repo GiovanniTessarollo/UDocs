@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { UserStorage } from "../storage/UserStorage";
 import {
   View,
   Text,
@@ -109,28 +110,30 @@ export default function RegisterScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() => {
+          onPress={async () => {
             if (!validateCpf(cpf)) {
               setErrorCpf("CPF inválido");
               return;
-            } else {
-              setErrorCpf("");
-
-              if (senha.length < 6) {
-                setErrorSenha("A senha deve conter pelo menos 6 caracteres.");
-                return;
-              } else {
-                setErrorSenha("");
-                navigation.navigate("Login");
-
-                
-
-                // Falta colocar um popup de sucesso.
-
-
-
-              }
             }
+
+            if (senha.length < 6) {
+              setErrorSenha("A senha deve conter pelo menos 6 caracteres.");
+              return;
+            }
+
+            if (confirmarSenha !== senha) {
+              setErrorConfirmarSenha("As senhas não coincidem.");
+              return;
+            }
+
+            await UserStorage.saveUser({
+              cpf,
+              senha,
+            });
+
+            Alert.alert("Sucesso", "Usuário cadastrado com sucesso!");
+
+            navigation.navigate("Login");
           }}
         >
           <Text style={styles.buttonText}>Continuar</Text>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,11 +6,15 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Alert,
 } from "react-native";
+import { UserStorage } from "../storage/UserStorage";
 
 export default function LoginScreen({ navigation }) {
   const [cpf, setCpf] = useState("");
   const [senha, setSenha] = useState("");
+  const [errorCpf, setErrorCpf] = useState("");
+  const [error, setErrorSenha] = useState("");
 
   return (
     <SafeAreaView style={styles.container}>
@@ -34,6 +38,10 @@ export default function LoginScreen({ navigation }) {
           onChangeText={setCpf}
         />
 
+        <Text style={styles.setErrorCpf}>
+          {errorCpf}
+        </Text>
+
         <TextInput
           style={styles.input}
           placeholder="Senha..."
@@ -42,9 +50,40 @@ export default function LoginScreen({ navigation }) {
           onChangeText={setSenha}
         />
 
+        <Text style={styles.setErrorSenha}>
+          {error}
+        </Text>
+
        <TouchableOpacity
           style={styles.button}
-          onPress={() => navigation.navigate("Dashboard")}>                  
+          onPress={async () => {
+            const user = await UserStorage.getUser();
+
+            // limpa erros anteriores
+            setErrorCpf("");
+            setErrorSenha("");
+
+            if (!user) {
+              setErrorCpf("Nenhum usuário cadastrado");
+              return;
+            }
+
+            let hasError = false;
+
+            if (cpf !== user.cpf) {
+              setErrorCpf("CPF inválido");
+              hasError = true;
+            }
+
+            if (senha !== user.senha) {
+              setErrorSenha("Senha inválida");
+              hasError = true;
+            }
+
+            if (hasError) return;
+
+            navigation.navigate("Dashboard");
+          }}>                  
         <Text style={styles.buttonText}>Continuar</Text>
        </TouchableOpacity>
 
@@ -165,4 +204,19 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#000",
   },
+
+    setErrorCpf: {
+    textAlign: "center",
+    color: "red",
+    fontSize: 14,
+    marginBottom: 10,
+  },
+
+  setErrorSenha: {
+    textAlign: "center",
+    color: "red",
+    fontSize: 14,
+    marginBottom: 10,  
+  },
+  
 });
