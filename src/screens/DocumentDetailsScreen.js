@@ -10,6 +10,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Alert, 
 } from "react-native";
 
 import { useFocusEffect } from "@react-navigation/native";
@@ -180,15 +181,31 @@ const abrirArquivo = async () => {
       </TouchableOpacity>
       <TouchableOpacity
   style={styles.deleteButton}
-  onPress={async () => {
-    await deleteDocument(index);
+  onPress={() => {
+  Alert.alert(
+    "Excluir documento",
+    "Tem certeza que deseja excluir este documento?",
+    [
+      {
+        text: "Cancelar",
+        style: "cancel",
+      },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: async () => {
+          await deleteDocument(index);
 
-    alert(
-      "Documento excluído com sucesso!"
-    );
+          alert(
+            "Documento excluído com sucesso!"
+          );
 
-    navigation.goBack();
-  }}
+          navigation.goBack();
+        },
+      },
+    ]
+  );
+}}
 >
   <Text style={styles.deleteButtonText}>
     🗑️ Excluir Documento

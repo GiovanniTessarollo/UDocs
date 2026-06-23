@@ -13,6 +13,7 @@ import {
   StyleSheet,
   ScrollView,
   TextInput,
+  Alert,
 } from "react-native";
 
 export default function DocumentsScreen({
@@ -52,14 +53,16 @@ export default function DocumentsScreen({
 
   if (diferencaDias < 0) {
     return {
-      texto: "Vencido",
+      texto: `Vencido há ${Math.abs(
+        diferencaDias
+      )} dias`,
       cor: "#EF4444",
     };
   }
 
   if (diferencaDias <= 30) {
     return {
-      texto: "Vence em breve",
+      texto: `Vence em ${diferencaDias} dias`,
       cor: "#F59E0B",
     };
   }
@@ -127,10 +130,34 @@ export default function DocumentsScreen({
         Meus Documentos
       </Text>
 
-      {documentos.length === 0 ? (
-  <Text style={{ color: "#666" }}>
-    Nenhum documento cadastrado.
-  </Text>
+   {documentos.length === 0 ? (
+  <View
+    style={{
+      alignItems: "center",
+      marginTop: 40,
+    }}
+  >
+    <Text
+      style={{
+        fontSize: 18,
+        fontWeight: "600",
+      }}
+    >
+      📄 Nenhum documento cadastrado
+    </Text>
+
+    <Text
+      style={{
+        color: "#666",
+        marginTop: 10,
+        textAlign: "center",
+      }}
+    >
+      Clique em "Adicionar Documento"
+      {"\n"}
+      para começar.
+    </Text>
+  </View>
 ) : (
   documentosFiltrados.map(
     (doc, index) => (
@@ -165,24 +192,36 @@ export default function DocumentsScreen({
           </Text>
 
           <Text
-           style={[styles.statusText,
-            {
-            color:
-            getStatus(doc.validade).cor,
-            },
+            style={[
+              styles.statusText,
+              {
+                color:
+                  getStatus(
+                    doc.validade
+                  ).cor,
+              },
             ]}
->
-             ● {getStatus(doc.validade).texto}
+          >
+            ●{" "}
+            {
+              getStatus(
+                doc.validade
+              ).texto
+            }
           </Text>
         </View>
 
-        <View
-          style={styles.actions}
-        >
+        <View style={styles.actions}>
           <TouchableOpacity
             onPress={async () => {
               await toggleFavorite(
                 doc.originalIndex
+              );
+
+              alert(
+                doc.favorito
+                  ? "Documento removido dos favoritos"
+                  : "Documento adicionado aos favoritos"
               );
 
               const docs =
@@ -191,9 +230,7 @@ export default function DocumentsScreen({
               setDocumentos(docs);
             }}
           >
-            <Text
-              style={styles.icon}
-            >
+            <Text style={styles.icon}>
               {doc.favorito
                 ? "⭐"
                 : "☆"}
@@ -201,20 +238,36 @@ export default function DocumentsScreen({
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={async () => {
-              await deleteDocument(
-                doc.originalIndex
+            onPress={() => {
+              Alert.alert(
+                "Excluir documento",
+                `Deseja excluir "${doc.nome}"?`,
+                [
+                  {
+                    text: "Cancelar",
+                    style: "cancel",
+                  },
+                  {
+                    text: "Excluir",
+                    style: "destructive",
+                    onPress: async () => {
+                      await deleteDocument(
+                        doc.originalIndex
+                      );
+
+                      const docs =
+                        await getDocuments();
+
+                      setDocumentos(
+                        docs
+                      );
+                    },
+                  },
+                ]
               );
-
-              const docs =
-                await getDocuments();
-
-              setDocumentos(docs);
             }}
           >
-            <Text
-              style={styles.icon}
-            >
+            <Text style={styles.icon}>
               🗑️
             </Text>
           </TouchableOpacity>

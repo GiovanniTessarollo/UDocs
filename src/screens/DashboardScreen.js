@@ -61,6 +61,50 @@ export default function DashboardScreen({
   }
 ).length;
 
+    const documentoMaisUrgente = documentos
+  .filter((doc) => {
+    if (!doc.validade) return false;
+
+    const [dia, mes, ano] =
+      doc.validade.split("/");
+
+    const validadeDate = new Date(
+      ano,
+      mes - 1,
+      dia
+    );
+
+    const hoje = new Date();
+
+    const diferencaDias =
+      Math.ceil(
+        (validadeDate - hoje) /
+          (1000 * 60 * 60 * 24)
+      );
+
+    return diferencaDias > 0;
+  })
+  .sort((a, b) => {
+    const [diaA, mesA, anoA] =
+      a.validade.split("/");
+
+    const [diaB, mesB, anoB] =
+      b.validade.split("/");
+
+    return (
+      new Date(
+        anoA,
+        mesA - 1,
+        diaA
+      ) -
+      new Date(
+        anoB,
+        mesB - 1,
+        diaB
+      )
+    );
+  })[0];
+
   useFocusEffect(
     useCallback(() => {
       const loadDocuments = async () => {
@@ -72,6 +116,32 @@ export default function DashboardScreen({
     }, [])
   );
 
+  const totalNotificacoes =
+  vencidos + proximosVencer;
+
+  const emDia = documentos.filter((doc) => {
+  if (!doc.validade) return true;
+
+  const [dia, mes, ano] =
+    doc.validade.split("/");
+
+  const validadeDate = new Date(
+    ano,
+    mes - 1,
+    dia
+  );
+
+  const hoje = new Date();
+
+  const diferencaDias =
+    Math.ceil(
+      (validadeDate - hoje) /
+        (1000 * 60 * 60 * 24)
+    );
+
+  return diferencaDias > 30;
+}).length;
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -80,33 +150,81 @@ export default function DashboardScreen({
         </Text>
 
         <View style={styles.headerIcons}>
-          <Text style={styles.icon}>
-            🔍
-          </Text>
+  <TouchableOpacity
+    onPress={() =>
+      navigation.navigate(
+        "Documentos"
+      )
+    }
+  >
+    <Text style={styles.icon}>
+      🔍
+    </Text>
+  </TouchableOpacity>
 
-          <Text style={styles.icon}>
-            🔔
-          </Text>
-        </View>
+  <TouchableOpacity
+  onPress={() => {
+    if (
+      vencidos === 0 &&
+      proximosVencer === 0
+    ) {
+      alert(
+        "✅ Nenhuma notificação pendente."
+      );
+      return;
+    }
+
+    alert(
+      `⚠️ Notificações\n\n🔴 ${vencidos} documento(s) vencido(s)\n🟡 ${proximosVencer} próximo(s) do vencimento`
+    );
+  }}
+>
+  <View>
+    <Text style={styles.icon}>
+      🔔
+    </Text>
+
+    {totalNotificacoes > 0 && (
+      <View style={styles.badge}>
+        <Text style={styles.badgeText}>
+          {totalNotificacoes}
+        </Text>
+      </View>
+    )}
+  </View>
+</TouchableOpacity>
+  </View>
       </View>
 
       <View style={styles.banner}>
-        <Text style={styles.bannerTitle}>
-          📄 Seus Documentos
-        </Text>
+       <Text style={styles.bannerTitle}>
+         👋 Bem-vindo ao UDoc
+       </Text>
 
-        <Text style={styles.bannerText}>
-          Você possui {documentos.length} documento(s)
-          e {favoritos} favorito(s).
-        </Text>
+      <Text style={styles.bannerText}>
+        {documentos.length} documento(s) organizados
+      </Text>
+
+      <Text style={styles.bannerSubText}>
+        ⭐ {favoritos} favorito(s)
+       </Text>
       </View>
 
       <Text style={styles.sectionTitle}>
         Resumo
       </Text>
 
-      <View style={styles.statsContainer}>
-  <View style={styles.statCard}>
+     <View style={styles.statsContainer}>
+  <View
+    style={[
+      styles.statCard,
+      styles.documentsCard,
+    ]}
+  >
+    <Text style={styles.cardIcon}>
+      📄
+    </Text>
+
     <Text style={styles.statNumber}>
       {documentos.length}
     </Text>
@@ -117,13 +235,20 @@ export default function DashboardScreen({
   </View>
 
   <TouchableOpacity
-    style={styles.statCard}
+    style={[
+      styles.statCard,
+      styles.favoriteCard,
+    ]}
     onPress={() =>
       navigation.navigate(
         "FavoriteDocuments"
       )
     }
   >
+    <Text style={styles.cardIcon}>
+      ⭐
+    </Text>
+
     <Text style={styles.statNumber}>
       {favoritos}
     </Text>
@@ -134,13 +259,20 @@ export default function DashboardScreen({
   </TouchableOpacity>
 
   <TouchableOpacity
-    style={styles.statCard}
+    style={[
+      styles.statCard,
+      styles.expiredCard,
+    ]}
     onPress={() =>
       navigation.navigate(
         "ExpiredDocuments"
       )
     }
   >
+    <Text style={styles.cardIcon}>
+      ⚠️
+    </Text>
+
     <Text style={styles.statNumber}>
       {vencidos}
     </Text>
@@ -151,13 +283,20 @@ export default function DashboardScreen({
   </TouchableOpacity>
 
   <TouchableOpacity
-    style={styles.statCard}
+    style={[
+      styles.statCard,
+      styles.upcomingCard,
+    ]}
     onPress={() =>
       navigation.navigate(
         "UpcomingDocuments"
       )
     }
   >
+    <Text style={styles.cardIcon}>
+      ⏳
+    </Text>
+
     <Text style={styles.statNumber}>
       {proximosVencer}
     </Text>
@@ -168,31 +307,134 @@ export default function DashboardScreen({
   </TouchableOpacity>
 </View>
 
+    <Text style={styles.sectionTitle}>
+  Documento mais urgente
+</Text>
+
+{documentoMaisUrgente && (
+  <View style={styles.urgentCard}>
+      <Text style={styles.urgentTitle}>
+        📄 {documentoMaisUrgente.nome}
+      </Text>
+
+      <Text style={styles.urgentSubtitle}>
+        📅 {documentoMaisUrgente.validade}
+       </Text>
+
+        <Text style={styles.urgentText}>
+      ⚠️   Atenção necessária
+        </Text>
+      </View>
+    )}  
+
+    <Text style={styles.sectionTitle}>
+  📊 Status Geral
+</Text>
+
+<View style={styles.statusContainer}>
+  <View
+    style={[
+      styles.statusCard,
+      styles.greenCard,
+    ]}
+  >
+    <Text style={styles.statusIcon}>
+      🟢
+    </Text>
+
+    <Text style={styles.statusNumber}>
+      {emDia}
+    </Text>
+
+    <Text style={styles.statusText}>
+      Em dia
+    </Text>
+  </View>
+
+  <View
+    style={[
+      styles.statusCard,
+      styles.yellowCard,
+    ]}
+  >
+    <Text style={styles.statusIcon}>
+      🟡
+    </Text>
+
+    <Text style={styles.statusNumber}>
+      {proximosVencer}
+    </Text>
+
+    <Text style={styles.statusText}>
+      Em breve
+    </Text>
+  </View>
+
+  <View
+    style={[
+      styles.statusCard,
+      styles.redCard,
+    ]}
+  >
+    <Text style={styles.statusIcon}>
+      🔴
+    </Text>
+
+    <Text style={styles.statusNumber}>
+      {vencidos}
+    </Text>
+
+    <Text style={styles.statusText}>
+      Vencidos
+    </Text>
+  </View>
+</View>
+
+
       <Text style={styles.sectionTitle}>
         Documentos recentes
       </Text>
 
       {documentos.length === 0 ? (
-        <Text>
-          Nenhum documento cadastrado.
+  <Text>
+    Nenhum documento cadastrado.
+  </Text>
+) : (
+  documentos
+    .slice(-3)
+    .reverse()
+    .map((doc, index) => (
+      <TouchableOpacity
+        key={index}
+        style={styles.documentCard}
+        onPress={() =>
+          navigation.navigate(
+            "DocumentDetails",
+            {
+              documento: doc,
+              index: documentos.findIndex(
+                (d) =>
+                  d.createdAt ===
+                  doc.createdAt
+              ),
+            }
+          )
+        }
+      >
+        <Text
+          style={styles.documentTitle}
+        >
+          📄 {doc.nome}
         </Text>
-      ) : (
-        documentos
-          .slice(-3)
-          .reverse()
-          .map((doc, index) => (
-            <View
-              key={index}
-              style={styles.documentCard}
-            >
-              <Text>
-                📄 {doc.nome}
-              </Text>
-            </View>
-          ))
-      )}
 
-      
+        <Text
+          style={styles.documentSubtitle}
+        >
+          👥 {doc.grupo || "Sem grupo"}
+        </Text>
+      </TouchableOpacity>
+    ))
+    )}
     </ScrollView>
   );
 }
@@ -212,9 +454,9 @@ const styles = StyleSheet.create({
   },
 
   logo: {
-    fontSize: 28,
-    fontWeight: "700",
-  },
+  fontSize: 34,
+  fontWeight: "800",
+},
 
   headerIcons: {
     flexDirection: "row",
@@ -257,14 +499,13 @@ const styles = StyleSheet.create({
 },
 
   statCard: {
-  backgroundColor: "#FFF",
   width: "48%",
-  padding: 15,
-  borderRadius: 15,
+  height: 130,
+  borderRadius: 18,
+  justifyContent: "center",
   alignItems: "center",
   marginBottom: 12,
 },
-
   statNumber: {
     fontSize: 24,
     fontWeight: "700",
@@ -281,4 +522,124 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginBottom: 12,
   },
+  
+  bannerSubText: {
+  color: "#FFF",
+  marginTop: 5,
+  opacity: 0.8,
+},
+
+documentsCard: {
+  backgroundColor: "#DBEAFE",
+},
+
+favoriteCard: {
+  backgroundColor: "#FEF3C7",
+},
+
+expiredCard: {
+  backgroundColor: "#FEE2E2",
+},
+
+upcomingCard: {
+  backgroundColor: "#FED7AA",
+},
+
+cardIcon: {
+  fontSize: 28,
+  marginBottom: 8,
+},
+
+documentTitle: {
+  fontSize: 16,
+  fontWeight: "700",
+},
+
+documentSubtitle: {
+  marginTop: 5,
+  color: "#666",
+},
+
+urgentCard: {
+  backgroundColor: "#FEF3C7",
+  borderRadius: 18,
+  padding: 18,
+  marginBottom: 10,
+},
+
+urgentTitle: {
+  fontSize: 18,
+  fontWeight: "700",
+},
+
+urgentSubtitle: {
+  marginTop: 5,
+  color: "#666",
+},
+
+urgentText: {
+  marginTop: 10,
+  color: "#B45309",
+  fontWeight: "700",
+},
+
+badge: {
+  position: "absolute",
+  top: -5,
+  right: -8,
+  backgroundColor: "#EF4444",
+  borderRadius: 10,
+  minWidth: 18,
+  height: 18,
+  justifyContent: "center",
+  alignItems: "center",
+  paddingHorizontal: 4,
+},
+
+badgeText: {
+  color: "#FFF",
+  fontSize: 10,
+  fontWeight: "700",
+},
+
+ statusContainer: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginBottom: 20,
+},
+
+statusCard: {
+  width: "31%",
+  padding: 15,
+  borderRadius: 15,
+  alignItems: "center",
+},
+
+greenCard: {
+  backgroundColor: "#DCFCE7",
+},
+
+yellowCard: {
+  backgroundColor: "#FEF3C7",
+},
+
+redCard: {
+  backgroundColor: "#FEE2E2",
+},
+
+statusIcon: {
+  fontSize: 24,
+},
+
+statusNumber: {
+  fontSize: 22,
+  fontWeight: "700",
+  marginTop: 5,
+},
+
+statusText: {
+  marginTop: 5,
+  fontSize: 12,
+  color: "#666",
+},
 });
