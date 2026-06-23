@@ -9,10 +9,12 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Image,
 } from "react-native";
 
 import { useFocusEffect } from "@react-navigation/native";
 import { getDocuments, deleteDocument, } from "../storage/DocumentStorage";
+import * as Linking from "expo-linking";
 
 export default function DocumentDetailsScreen({
   route,
@@ -38,6 +40,25 @@ if (docs[index]) {
     loadDocument();
   }, [index])
 );
+
+const abrirArquivo = async () => {
+  if (!documentoAtual?.arquivo?.uri) {
+    alert("Nenhum arquivo anexado.");
+    return;
+  }
+
+  try {
+    await Linking.openURL(
+      documentoAtual.arquivo.uri
+    );
+  } catch (error) {
+    console.log(error);
+
+    alert(
+      "Não foi possível abrir o arquivo."
+    );
+  }
+};
 
   return (
     <ScrollView style={styles.container}>
@@ -92,10 +113,54 @@ if (docs[index]) {
 
         <Text style={styles.value}>
           {documentoAtual?.favorito
-            ? "⭐ Sim"
-            : "Não"}
+          ? "⭐ Sim"
+          : "Não"}
         </Text>
       </View>
+
+      <View style={styles.card}>
+  <Text style={styles.label}>
+    Arquivo
+  </Text>
+
+  <Text style={styles.value}>
+    {documentoAtual?.arquivo?.name ||
+      "Nenhum arquivo anexado"}
+  </Text>
+
+  {documentoAtual?.arquivo?.mimeType?.startsWith(
+    "image/"
+  ) && (
+    <Image
+      source={{
+        uri: documentoAtual.arquivo.uri,
+      }}
+      style={styles.previewImage}
+    />
+  )}
+</View>
+
+      {documentoAtual?.arquivo?.mimeType?.startsWith(
+  "image/"
+) && (
+  <Image
+    source={{
+      uri: documentoAtual.arquivo.uri,
+    }}
+    style={styles.previewImage}
+  />
+)}
+
+          {documentoAtual?.arquivo && (
+        <TouchableOpacity
+          style={styles.openFileButton}
+          onPress={abrirArquivo}
+        >
+        <Text style={styles.openFileButtonText}>
+          📂 Abrir Arquivo
+        </Text>
+        </TouchableOpacity>
+        )}
 
       <TouchableOpacity
         style={styles.editButton}
@@ -192,5 +257,27 @@ deleteButtonText: {
   color: "#FFF",
   fontSize: 16,
   fontWeight: "600",
+},
+
+openFileButton: {
+  backgroundColor: "#2563EB",
+  height: 55,
+  borderRadius: 12,
+  justifyContent: "center",
+  alignItems: "center",
+  marginTop: 15,
+},
+
+openFileButtonText: {
+  color: "#FFF",
+  fontSize: 16,
+  fontWeight: "600",
+},
+
+previewImage: {
+  width: "100%",
+  height: 200,
+  borderRadius: 12,
+  marginTop: 10,
 },
 });

@@ -87,3 +87,19 @@ export const updateDocument = async (
     );
   }
 };
+
+export const overwriteDocuments = async (
+  documents
+) => {
+  try {
+    await AsyncStorage.setItem(
+      DOCUMENTS_KEY,
+      JSON.stringify(documents)
+    );
+  } catch (error) {
+    console.log(
+      "Erro ao restaurar backup:",
+      error
+    );
+  }
+};

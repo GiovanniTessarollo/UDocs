@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { saveDocument } from "../storage/DocumentStorage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { scheduleExpirationNotification,} from "../services/NotificationService";
+import * as DocumentPicker from "expo-document-picker";
 
 import {
   Text,
@@ -18,6 +19,18 @@ export default function NewDocumentScreen({ navigation }) {
   const [validade, setValidade] = useState("");
   const [grupo, setGrupo] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [arquivo, setArquivo] = useState(null);
+
+  const selecionarArquivo = async () => {
+  const result = await DocumentPicker.getDocumentAsync({
+      type: "*/*",
+      copyToCacheDirectory: true,
+    });
+
+  if (!result.canceled) {
+    setArquivo(result.assets[0]);
+  }
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -87,6 +100,21 @@ export default function NewDocumentScreen({ navigation }) {
         ))}
       </View>
 
+      <Text style={styles.label}>
+        Arquivo
+      </Text>
+
+      <TouchableOpacity
+        style={styles.input}
+        onPress={selecionarArquivo}
+      >
+      <Text>
+        {arquivo
+        ? arquivo.name
+        : "📎 Selecionar arquivo"}
+      </Text>
+      </TouchableOpacity>
+
       {showDatePicker && (
         <DateTimePicker
           value={new Date()}
@@ -139,6 +167,7 @@ export default function NewDocumentScreen({ navigation }) {
             validade,
             grupo,
             favorito: false,
+            arquivo,
             createdAt: new Date().toISOString(),
           });
 
