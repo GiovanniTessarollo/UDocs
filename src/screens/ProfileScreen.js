@@ -16,7 +16,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 
 // NOVOS IMPORTS PARA ARQUIVOS FUNCIONAIS
-import * as FileSystem from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 
@@ -24,7 +24,7 @@ export default function ProfileScreen() {
   const { width } = useWindowDimensions();
   const navigation = useNavigation(); 
   
-  const [name, setName] = useState('Giovanni Tessarollo');
+  const [name, setName] = useState('Usuario');
   const [isEditing, setIsEditing] = useState(false);
   const [image, setImage] = useState('https://via.placeholder.com/150');
 
@@ -51,60 +51,50 @@ export default function ProfileScreen() {
   // 1. EXPORTAR DADOS (GERA UM ARQUIVO .JSON REAL)
   const handleExportData = async () => {
     try {
-      // Cria o objeto com os dados atuais do estado
-      const userData = {
-        name: name,
-        image: image,
-        exportedAt: new Date().toISOString()
-      };
-
-      // Define o caminho temporário do arquivo no dispositivo
-      const fileUri = FileSystem.documentDirectory + 'udocs_perfil.json';
+      const userData = { name, image };
       
-      // Escreve os dados como string JSON no arquivo
-      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(userData, null, 2));
+      // Nova API do Expo: Cria uma referência limpa ao arquivo no armazenamento do app
+      const file = new File(Paths.document, 'udocs_perfil.json');
+      
+      // Escreve os dados em formato de texto diretamente
+      file.write(JSON.stringify(userData));
 
-      // Verifica se o dispositivo permite compartilhamento de arquivos
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: 'application/json',
-          dialogTitle: 'Salvar dados do UDocs',
-          UTI: 'public.json'
-        });
-      } else {
-        Alert.alert("Erro", "O compartilhamento não está disponível no seu dispositivo.");
-      }
+      // Abre o menu de compartilhamento nativo do celular
+      await Sharing.shareAsync(file.uri);
     } catch (error) {
       console.error(error);
-      Alert.alert("Erro", "Não foi possível exportar os dados.");
+      Alert.alert("Erro", "Não foi possível exportar os seus dados.");
     }
   };
 
-  // 2. IMPORTAR DADOS (LÊ UM ARQUIVO .JSON DO CELULAR E ATUALIZA A TELA)
   const handleImportData = async () => {
     try {
-      // Abre o seletor de documentos do celular filtrando por JSON
+      // Mudamos para '*/*' para que os arquivos fiquem clicáveis e visíveis em qualquer celular
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/json',
+        type: '*/*',
         copyToCacheDirectory: true
       });
 
-      // Se o usuário não cancelou a seleção
-      if (!result.canceled && result.assets && result.assets[0]) {
-        const pickedFileUri = result.assets[0].uri;
-        
-        // Lê o conteúdo do arquivo selecionado
-        const fileContent = await FileSystem.readAsStringAsync(pickedFileUri);
-        const parsedData = JSON.parse(fileContent);
+      // Se o usuário fechar o seletor ou cancelar, interrompe aqui sem erro
+      if (result.canceled || !result.assets || !result.assets[0]) {
+        return;
+      }
 
-        // Valida se o arquivo possui a estrutura correta do app
-        if (parsedData.name && parsedData.image) {
-          setName(parsedData.name);
-          setImage(parsedData.image);
-          Alert.alert("Sucesso", "Dados importados e atualizados com sucesso!");
-        } else {
-          Alert.alert("Arquivo Inválido", "O arquivo selecionado não contém os dados do perfil UDocs.");
-        }
+      const pickedFileUri = result.assets[0].uri;
+      
+      // Nova API do Expo: Abre e lê o conteúdo de texto do arquivo selecionado de forma síncrona
+      const file = new File(pickedFileUri);
+      const fileContent = file.textSync();
+      const parsedData = JSON.parse(fileContent);
+
+      // Validação flexível: confere se o JSON tem a estrutura esperada do perfil
+      if (parsedData && (parsedData.name || parsedData.image)) {
+        if (parsedData.name) setName(parsedData.name);
+        if (parsedData.image) setImage(parsedData.image);
+        
+        Alert.alert("Sucesso", "Dados importados e perfil atualizado!");
+      } else {
+        Alert.alert("Arquivo Inválido", "Este arquivo não contém dados de perfil válidos do UDocs.");
       }
     } catch (error) {
       console.error(error);
