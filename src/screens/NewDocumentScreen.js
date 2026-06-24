@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { saveDocument } from "../storage/DocumentStorage";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { scheduleExpirationNotification,} from "../services/NotificationService";
+import { scheduleExpirationNotification } from "../services/NotificationService";
 import * as DocumentPicker from "expo-document-picker";
+// Importamos o useNavigation aqui
+import { useNavigation } from "@react-navigation/native"; 
 
 import {
   Text,
@@ -13,7 +15,9 @@ import {
   View,
 } from "react-native";
 
-export default function NewDocumentScreen({ navigation }) {
+export default function NewDocumentScreen() { // Removida a propriedade { navigation }
+  const navigation = useNavigation(); // Inicializamos o hook de navegação aqui
+  
   const [nome, setNome] = useState("");
   const [tipo, setTipo] = useState("");
   const [validade, setValidade] = useState("");
@@ -22,14 +26,14 @@ export default function NewDocumentScreen({ navigation }) {
   const [arquivo, setArquivo] = useState(null);
 
   const selecionarArquivo = async () => {
-  const result = await DocumentPicker.getDocumentAsync({
+    const result = await DocumentPicker.getDocumentAsync({
       type: "*/*",
       copyToCacheDirectory: true,
     });
 
-  if (!result.canceled) {
-    setArquivo(result.assets[0]);
-  }
+    if (!result.canceled) {
+      setArquivo(result.assets[0]);
+    }
   };
 
   return (
@@ -108,11 +112,11 @@ export default function NewDocumentScreen({ navigation }) {
         style={styles.input}
         onPress={selecionarArquivo}
       >
-      <Text>
-        {arquivo
-        ? arquivo.name
-        : "📎 Selecionar arquivo"}
-      </Text>
+        <Text>
+          {arquivo
+            ? arquivo.name
+            : "📎 Selecionar arquivo"}
+        </Text>
       </TouchableOpacity>
 
       {showDatePicker && (
@@ -143,47 +147,66 @@ export default function NewDocumentScreen({ navigation }) {
         />
       )}
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={async () => {
-          if (!nome.trim()) {
-            alert("Digite o nome do documento");
-            return;
-          }
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[styles.button, styles.cancelButton]}
+          onPress={() => {
+            // Se goBack() falhar por ser um Modal, ele tenta fechar de outra forma
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              alert("Não há tela para voltar no histórico.");
+            }
+          }}
+        >
+          <Text style={styles.cancelButtonText}>
+            Voltar
+          </Text>
+        </TouchableOpacity>
 
-          if (!tipo.trim()) {
-            alert("Digite o tipo do documento");
-            return;
-          }
+        <TouchableOpacity
+          style={styles.button}
+          onPress={async () => {
+            if (!nome.trim()) {
+              alert("Digite o nome do documento");
+              return;
+            }
 
-          if (!grupo) {
-            alert("Selecione um grupo");
-            return;
-          }
+            if (!tipo.trim()) {
+              alert("Digite o tipo do documento");
+              return;
+            }
 
-          await saveDocument({
-            nome,
-            tipo,
-            validade,
-            grupo,
-            favorito: false,
-            arquivo,
-            createdAt: new Date().toISOString(),
-          });
+            if (!grupo) {
+              alert("Selecione um grupo");
+              return;
+            }
 
-          
-  await scheduleExpirationNotification(
-    nome,
-  );
-          alert("Documento salvo com sucesso!");
+            await saveDocument({
+              nome,
+              tipo,
+              validade,
+              grupo,
+              favorito: false,
+              arquivo,
+              createdAt: new Date().toISOString(),
+            });
 
-          navigation.goBack();
-        }}
-      >
-        <Text style={styles.buttonText}>
-          Salvar Documento
-        </Text>
-      </TouchableOpacity>
+            await scheduleExpirationNotification(
+              nome,
+            );
+            alert("Documento salvo com sucesso!");
+
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            }
+          }}
+        >
+          <Text style={styles.buttonText}>
+            Salvar
+          </Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -247,17 +270,36 @@ const styles = StyleSheet.create({
     color: "#FFF",
   },
 
+  buttonContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 10,
+    marginBottom: 40,
+  },
+
   button: {
+    flex: 1,
     backgroundColor: "#000",
     height: 55,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
   },
 
   buttonText: {
     color: "#FFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  cancelButton: {
+    backgroundColor: "#FFF",
+    borderWidth: 1,
+    borderColor: "#DDD",
+  },
+
+  cancelButtonText: {
+    color: "#333",
     fontSize: 16,
     fontWeight: "600",
   },
