@@ -1,282 +1,315 @@
-import React, { useState } from "react";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
-import { getUserData, clearSession } from "../storage/SessionStorage"; // Certifique-se de que a rota está correta para sua pasta storage
+import React, { useState } from 'react';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  Image, 
+  TouchableOpacity, 
+  TextInput, 
+  ScrollView, 
+  KeyboardAvoidingView, 
+  Platform,
+  useWindowDimensions,
+  Alert 
+} from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { useNavigation } from '@react-navigation/native';
 
-import {
-  Text,
-  StyleSheet,
-  ScrollView,
-  View,
-  TouchableOpacity,
-  SafeAreaView,
-  Alert,
-} from "react-native";
+// NOVOS IMPORTS PARA ARQUIVOS FUNCIONAIS
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as DocumentPicker from 'expo-document-picker';
 
 export default function ProfileScreen() {
-  const navigation = useNavigation();
-  const [userName, setUserName] = useState("Usuário");
-  const [userInitials, setUserInitials] = useState("U");
+  const { width } = useWindowDimensions();
+  const navigation = useNavigation(); 
+  
+  const [name, setName] = useState('Giovanni Tessarollo');
+  const [isEditing, setIsEditing] = useState(false);
+  const [image, setImage] = useState('https://via.placeholder.com/150');
 
-  // Carrega os dados salvos sempre que o usuário focar na tela de Perfil
-  useFocusEffect(
-    React.useCallback(() => {
-      async function loadUserData() {
-        try {
-          const userData = await getUserData(); 
-          // Se o objeto salvo no login tiver a propriedade 'nome' ou 'name'
-          const nomeDoUsuario = userData?.nome || userData?.name || "Usuário";
-          
-          setUserName(nomeDoUsuario);
-          
-          // Pega as iniciais do nome para o Avatar
-          const names = nomeDoUsuario.trim().split(" ");
-          const initials = names.length > 1 
-            ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
-            : `${names[0][0]}`.toUpperCase();
-          setUserInitials(initials);
-          
-        } catch (error) {
-          console.log("Erro ao carregar dados do usuário:", error);
-        }
-      }
-      loadUserData();
-    }, [])
-  );
+  // Seleção de Imagem da Galeria
+  const pickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.granted === false) {
+      Alert.alert("Permissão necessária", "Precisamos de acesso às suas fotos.");
+      return;
+    }
 
-  // Função para fazer logout limpo e seguro
-  const handleLogout = () => {
-    Alert.alert("Sair", "Tem certeza que deseja sair do aplicativo?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Sair",
-        style: "destructive",
-        onPress: async () => {
-          await clearSession();
-          // Reseta a navegação e manda o usuário direto para a tela de Login
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "LoginScreen" }], 
-          });
-        },
-      },
-    ]);
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
   };
 
-  // Função auxiliar para criar as linhas do menu
-  const renderMenuOption = (iconName, iconColor, bgIconColor, title, subtitle, onPress) => (
-    <TouchableOpacity style={styles.optionRow} onPress={onPress}>
-      <View style={[styles.iconContainer, { backgroundColor: bgIconColor }]}>
-        <Ionicons name={iconName} size={22} color={iconColor} />
-      </View>
-      <View style={styles.optionTextContainer}>
-        <Text style={styles.optionTitle}>{title}</Text>
-        {subtitle ? <Text style={styles.optionSubtitle}>{subtitle}</Text> : null}
-      </View>
-      <Ionicons name="chevron-forward" size={18} color="#CCC" />
-    </TouchableOpacity>
-  );
+  // 1. EXPORTAR DADOS (GERA UM ARQUIVO .JSON REAL)
+  const handleExportData = async () => {
+    try {
+      // Cria o objeto com os dados atuais do estado
+      const userData = {
+        name: name,
+        image: image,
+        exportedAt: new Date().toISOString()
+      };
+
+      // Define o caminho temporário do arquivo no dispositivo
+      const fileUri = FileSystem.documentDirectory + 'udocs_perfil.json';
+      
+      // Escreve os dados como string JSON no arquivo
+      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(userData, null, 2));
+
+      // Verifica se o dispositivo permite compartilhamento de arquivos
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Salvar dados do UDocs',
+          UTI: 'public.json'
+        });
+      } else {
+        Alert.alert("Erro", "O compartilhamento não está disponível no seu dispositivo.");
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Erro", "Não foi possível exportar os dados.");
+    }
+  };
+
+  // 2. IMPORTAR DADOS (LÊ UM ARQUIVO .JSON DO CELULAR E ATUALIZA A TELA)
+  const handleImportData = async () => {
+    try {
+      // Abre o seletor de documentos do celular filtrando por JSON
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/json',
+        copyToCacheDirectory: true
+      });
+
+      // Se o usuário não cancelou a seleção
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const pickedFileUri = result.assets[0].uri;
+        
+        // Lê o conteúdo do arquivo selecionado
+        const fileContent = await FileSystem.readAsStringAsync(pickedFileUri);
+        const parsedData = JSON.parse(fileContent);
+
+        // Valida se o arquivo possui a estrutura correta do app
+        if (parsedData.name && parsedData.image) {
+          setName(parsedData.name);
+          setImage(parsedData.image);
+          Alert.alert("Sucesso", "Dados importados e atualizados com sucesso!");
+        } else {
+          Alert.alert("Arquivo Inválido", "O arquivo selecionado não contém os dados do perfil UDocs.");
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Erro", "Falha ao ler ou processar o arquivo selecionado.");
+    }
+  };
+
+  // 3. SAIR DA CONTA (LOGOUT)
+  const handleLogout = () => {
+    Alert.alert(
+      "Sair da Conta", 
+      "Tem certeza que deseja encerrar sua sessão?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Sair", 
+          style: "destructive", 
+          onPress: () => navigation.replace('Login') 
+        }
+      ]
+    );
+  };
+
+  const isTabletOrWeb = width > 600;
+  const avatarSize = isTabletOrWeb ? 160 : 120;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={{ width: 24 }} />
-        <Text style={styles.headerTitle}>Meu Perfil</Text>
-        {/* Ícone de engrenagem levando para a tela de configurações cadastrada na sua estrutura */}
-        <TouchableOpacity onPress={() => navigation.navigate("SettingsScreen")}>
-          <Ionicons name="settings-outline" size={24} color="#000" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      style={styles.container}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
         
-        {/* Card do Usuário (Sem a tag de plano) */}
-        <View style={styles.userCard}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{userInitials}</Text>
-            </View>
-            <TouchableOpacity style={styles.cameraButton}>
-              <Ionicons name="camera" size={14} color="#666" />
-            </TouchableOpacity>
-          </View>
+        {/* CARD DE PERFIL */}
+        <View style={[styles.profileCard, { width: isTabletOrWeb ? '50%' : '90%' }]}>
           
-          <View style={styles.userInfo}>
-            <Text style={styles.userName} numberOfLines={2}>
-              {userName}
-            </Text>
-          </View>
-        </View>
+          <TouchableOpacity onPress={pickImage} activeOpacity={0.8} style={styles.imageContainer}>
+            <Image 
+              source={{ uri: image }} 
+              style={[styles.avatar, { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }]} 
+            />
+            <View style={styles.cameraIconBadge}>
+              <Text style={styles.cameraIconText}>📷</Text>
+            </View>
+          </TouchableOpacity>
 
-        {/* SEÇÃO: CONTA */}
-        <Text style={styles.sectionHeader}>Conta</Text>
-        <View style={styles.sectionCard}>
-          {renderMenuOption(
-            "person-circle-outline", 
-            "#2B6CB0", 
-            "#EBF8FF", 
-            "Editar Perfil", 
-            "Nome e foto", 
-            () => Alert.alert("Editar Perfil", "Ação para alterar nome e foto.")
+          {isEditing ? (
+            <View style={styles.editNameContainer}>
+              <TextInput
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+                placeholder="Digite seu nome"
+                placeholderTextColor="#999"
+                autoFocus
+              />
+              <TouchableOpacity style={styles.saveButton} onPress={() => setIsEditing(false)}>
+                <Text style={styles.saveButtonText}>Salvar Nome</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.nameContainer}>
+              <Text style={styles.userName}>{name}</Text>
+              <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
+                <Text style={styles.editButtonText}>Editar Perfil</Text>
+              </TouchableOpacity>
+            </View>
           )}
-          <View style={styles.divider} />
-          {renderMenuOption(
-            "lock-closed-outline", 
-            "#234E52", 
-            "#E6FFFA", 
-            "Alterar Senha", 
-            "Segurança da conta", 
-            () => Alert.alert("Alterar Senha", "Ação para redefinir senha.")
-          )}
+
         </View>
 
-        {/* SEÇÃO: PREFERÊNCIAS */}
-        <Text style={styles.sectionHeader}>Preferências</Text>
-        <View style={styles.sectionCard}>
-          {renderMenuOption("notifications-outline", "#553C9A", "#FAF5FF", "Notificações", "Configurar alertas e lembretes", () => {})}
-          <View style={styles.divider} />
-          {renderMenuOption("color-palette-outline", "#DD6B20", "#FFFAF0", "Aparência", "Tema claro ou escuro", () => {})}
+        {/* SEÇÃO DE GERENCIAMENTO */}
+        <View style={[styles.actionsContainer, { width: isTabletOrWeb ? '50%' : '90%' }]}>
+          <Text style={styles.sectionTitle}>Gerenciamento da Conta</Text>
+
+          {/* Botão Exportar Dados */}
+          <TouchableOpacity style={styles.actionButton} onPress={handleExportData}>
+            <Text style={styles.actionButtonIcon}>📤</Text>
+            <View style={styles.actionButtonTextContainer}>
+              <Text style={styles.actionButtonTitle}>Exportar Dados</Text>
+              <Text style={styles.actionButtonSub}>Salvar um arquivo de backup do seu perfil</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Botão Importar Dados */}
+          <TouchableOpacity style={styles.actionButton} onPress={handleImportData}>
+            <Text style={styles.actionButtonIcon}>📥</Text>
+            <View style={styles.actionButtonTextContainer}>
+              <Text style={styles.actionButtonTitle}>Importar Dados</Text>
+              <Text style={styles.actionButtonSub}>Restaurar perfil a partir de um arquivo JSON</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Botão Sair da Conta */}
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Sair da Conta</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* SEÇÃO: DADOS E BACKUP */}
-        <Text style={styles.sectionHeader}>Dados e Backup</Text>
-        <View style={styles.sectionCard}>
-          {renderMenuOption("cloud-upload-outline", "#3182CE", "#EBF8FF", "Backup e Restauração", "Salve e restaure seus dados", () => {})}
-          <View style={styles.divider} />
-          {renderMenuOption("download-outline", "#319795", "#E6FFFA", "Exportar Dados", "Exportar documentos e informações", () => {})}
-        </View>
-
-        {/* SEÇÃO: OUTROS */}
-        <Text style={styles.sectionHeader}>Outros</Text>
-        <View style={styles.sectionCard}>
-          {renderMenuOption("help-circle-outline", "#805AD5", "#FAF5FF", "Ajuda e Suporte", null, () => {})}
-          <View style={styles.divider} />
-          {renderMenuOption("star-outline", "#D69E2E", "#FEFCBF", "Avaliar o UDoc", null, () => {})}
-          <View style={styles.divider} />
-          {renderMenuOption("log-out-outline", "#E53E3E", "#FFF5F5", "Sair da Conta", "Fazer logout do aplicativo", handleLogout)}
-        </View>
-
-        <View style={{ height: 40 }} />
       </ScrollView>
-    </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#F7F7F7",
+  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  scrollContainer: { flexGrow: 1, alignItems: 'center', paddingVertical: 30 },
+  profileCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 30,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+    maxWidth: 550,
+    marginBottom: 20,
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
+  imageContainer: { marginBottom: 20, position: 'relative' },
+  avatar: { borderWidth: 4, borderColor: '#007AFF' },
+  cameraIconBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    backgroundColor: '#007AFF',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#ffffff',
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: "#F7F7F7",
+  cameraIconText: { fontSize: 14, color: '#fff' },
+  nameContainer: { alignItems: 'center', width: '100%' },
+  userName: { fontSize: 22, fontWeight: '700', color: '#212529', marginBottom: 8 },
+  editButton: { paddingVertical: 6, paddingHorizontal: 16, borderRadius: 20, backgroundColor: '#f1f3f5' },
+  editButtonText: { color: '#007AFF', fontWeight: '600', fontSize: 13 },
+  editNameContainer: { width: '100%', alignItems: 'center' },
+  input: {
+    width: '100%',
+    height: 44,
+    borderColor: '#dee2e6',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    backgroundColor: '#f8f9fa',
+    marginBottom: 10,
+    color: '#212529',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#000",
+  saveButton: {
+    width: '100%',
+    height: 44,
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  userCard: {
-    backgroundColor: "#111",
+  saveButtonText: { color: '#ffffff', fontSize: 15, fontWeight: '600' },
+  actionsContainer: {
+    backgroundColor: '#ffffff',
     borderRadius: 24,
     padding: 24,
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 10,
-    marginBottom: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+    maxWidth: 550,
   },
-  avatarContainer: {
-    position: "relative",
-    marginRight: 18,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#495057',
+    marginBottom: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  avatar: {
-    width: 65,
-    height: 65,
-    borderRadius: 32.5,
-    backgroundColor: "#BFDBFE",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarText: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#1E3A8A",
-  },
-  cameraButton: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    backgroundColor: "#FFF",
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 14,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#DDD",
+    borderColor: '#e9ecef',
   },
-  userInfo: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  userName: {
-    color: "#FFF",
-    fontSize: 22,
-    fontWeight: "700",
-  },
-  sectionHeader: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 10,
-    marginLeft: 4,
-  },
-  sectionCard: {
-    backgroundColor: "#FFF",
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#EAEAEA",
-  },
-  optionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-  },
-  iconContainer: {
-    width: 38,
-    height: 38,
+  actionButtonIcon: { fontSize: 24, marginRight: 16 },
+  actionButtonTextContainer: { flex: 1 },
+  actionButtonTitle: { fontSize: 15, fontWeight: '600', color: '#212529' },
+  actionButtonSub: { fontSize: 12, color: '#868e96', marginTop: 2 },
+  logoutButton: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#fff5f5',
     borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#ffe3e3',
   },
-  optionTextContainer: {
-    flex: 1,
-  },
-  optionTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#111",
-  },
-  optionSubtitle: {
-    fontSize: 12,
-    color: "#777",
-    marginTop: 2,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#F0F0F0",
-    marginLeft: 52,
-  },
+  logoutButtonText: { color: '#ff6b6b', fontSize: 15, fontWeight: '700' },
 });
