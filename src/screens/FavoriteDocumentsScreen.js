@@ -8,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  View,
 } from "react-native";
 
 import { useFocusEffect } from "@react-navigation/native";
@@ -94,9 +95,19 @@ export default function FavoriteDocumentsScreen({
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>
-        ⭐ Favoritos
-      </Text>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() =>navigation.goBack()}
+        >
+         <Text style={styles.backButton}>
+           ←
+         </Text>
+        </TouchableOpacity>
+
+          <Text style={styles.title}>
+            Favoritos
+          </Text>
+      </View>
 
       {documentos.length === 0 ? (
         <Text>
@@ -161,10 +172,21 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "700",
-    marginTop: 40,
-    marginBottom: 20,
+  },
+
+  header: {
+   flexDirection: "row",
+   alignItems: "center",
+   marginTop: 40,
+   marginBottom: 20,
+  },
+
+  backButton: {
+   fontSize: 28,
+   fontWeight: "700",
+   marginRight: 15,
   },
 
   card: {

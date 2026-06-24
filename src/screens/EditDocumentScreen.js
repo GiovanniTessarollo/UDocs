@@ -44,9 +44,19 @@ export default function EditDocumentScreen({
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>
-        ✏️ Editar Documento
-      </Text>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() =>
+            navigation.goBack()}>
+        <Text style={styles.backButton}>
+            ←
+        </Text>
+        </TouchableOpacity>
+
+        <Text style={styles.title}>
+          Editar Documento
+        </Text>
+      </View>
 
       <TextInput
         style={styles.input}
@@ -200,10 +210,22 @@ const styles = StyleSheet.create({
   },
 
   title: {
+    fontSize: 24,
+    fontWeight: "700",
+    
+  },
+
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 40,
+    marginBottom: 20,
+  },
+
+  backButton: {
     fontSize: 28,
     fontWeight: "700",
-    marginTop: 50,
-    marginBottom: 25,
+    marginRight: 15,
   },
 
   input: {

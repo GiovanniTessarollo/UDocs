@@ -4,6 +4,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function GroupDocumentsScreen({
@@ -62,9 +63,19 @@ export default function GroupDocumentsScreen({
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>
-        👥 {grupo}
-      </Text>
+      <View style={styles.header}>
+       <TouchableOpacity
+         onPress={() =>
+          navigation.goBack()}>
+        <Text style={styles.backButton}>
+          ←
+        </Text>
+       </TouchableOpacity>
+
+        <Text style={styles.title}>
+          {grupo}
+        </Text>
+      </View>
 
       {documentos.length === 0 ? (
         <Text>
@@ -129,10 +140,22 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "700",
+    
+  },
+
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 40,
     marginBottom: 20,
+  },
+
+  backButton: {
+    fontSize: 28,
+    fontWeight: "700",
+    marginRight: 15,
   },
 
   statusText: {
