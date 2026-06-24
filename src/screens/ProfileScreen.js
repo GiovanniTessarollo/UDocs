@@ -15,7 +15,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
-// IMPORTS DO EXPO-FILE-SYSTEM E STORAGE
+// NOVOS IMPORTS PARA ARQUIVOS FUNCIONAIS
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
@@ -25,7 +25,6 @@ export default function ProfileScreen() {
   const { width } = useWindowDimensions();
   const navigation = useNavigation(); 
   
-  // Estados do Perfil
   const [name, setName] = useState('Giovanni Tessarollo');
   const [image, setImage] = useState('https://via.placeholder.com/150');
   const [isEditing, setIsEditing] = useState(false);
@@ -97,7 +96,7 @@ export default function ProfileScreen() {
   const handleImportData = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: '/',
+        type: '*/*',
         copyToCacheDirectory: true
       });
 
