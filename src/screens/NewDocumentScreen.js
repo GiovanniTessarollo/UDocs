@@ -25,6 +25,15 @@ export default function NewDocumentScreen() { // Removida a propriedade { naviga
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [arquivo, setArquivo] = useState(null);
 
+  const novoDocumento = {
+  id: Math.random().toString(), // ou uuid
+  titulo: nomeDoDoc,
+  tipo: tipoSelecionado,          // Ex: "RG", "CNH", "CPF"
+  dataVencimento: data,          // Ex: "2028-11-20"
+  uri: imagemDoDocumento,        // Caminho da foto temporária ou arquivo
+  criadoEm: new Date().toISOString()
+};
+
   const selecionarArquivo = async () => {
     const result = await DocumentPicker.getDocumentAsync({
       type: "*/*",
