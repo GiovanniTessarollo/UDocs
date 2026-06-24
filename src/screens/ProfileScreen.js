@@ -15,7 +15,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
-// NOVOS IMPORTS PARA ARQUIVOS FUNCIONAIS
+// IMPORTS DO EXPO-FILE-SYSTEM E STORAGE
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
@@ -25,6 +25,7 @@ export default function ProfileScreen() {
   const { width } = useWindowDimensions();
   const navigation = useNavigation(); 
   
+  // Estados do Perfil
   const [name, setName] = useState('Giovanni Tessarollo');
   const [image, setImage] = useState('https://via.placeholder.com/150');
   const [isEditing, setIsEditing] = useState(false);
@@ -125,11 +126,11 @@ export default function ProfileScreen() {
         }
         
         Alert.alert(
-  "Sucesso",
-  `Backup restaurado!\n\nPerfil atualizado e ${
-    parsedData.documents?.length || 0
-  } documentos importados.`
-);
+         "Sucesso",
+         `Backup restaurado!\n\nPerfil atualizado e ${
+            parsedData.documents?.length || 0
+           } documentos importados.`
+          );
       } else {
         Alert.alert("Arquivo Inválido", "Este arquivo não possui uma estrutura de backup válida do UDocs.");
       }
